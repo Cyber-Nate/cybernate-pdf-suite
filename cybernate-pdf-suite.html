@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cyber Nate — Document Intelligence Suite</title>
+<title>Cyber Nate — Document Intelligence Suite v2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -73,12 +75,71 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.1);box-shadow:
 .modal-overlay{background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)}
 .modal-content{animation:modalSlide 0.3s ease}
 @keyframes modalSlide{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.ai-summary-panel{background:linear-gradient(135deg,rgba(59,130,246,0.05),rgba(147,51,234,0.05));border:1px solid rgba(59,130,246,0.15)}
+.ai-summary-content h1{font-size:1.25em;font-weight:700;color:#e2e8f0;margin-bottom:0.5em}
+.ai-summary-content h2{font-size:1.1em;font-weight:600;color:#cbd5e1;margin-top:1em;margin-bottom:0.4em}
+.ai-summary-content h3{font-size:1em;font-weight:600;color:#94a3b8;margin-top:0.8em;margin-bottom:0.3em}
+.ai-summary-content ul{margin-left:1.2em;margin-bottom:0.5em}
+.ai-summary-content li{margin-bottom:0.2em;color:#cbd5e1}
+.ai-summary-content p{margin-bottom:0.5em;color:#cbd5e1;line-height:1.6}
+.ai-summary-content strong{color:#60a5fa}
+.ai-summary-content em{color:#fbbf24;font-style:italic}
+.ai-summary-content blockquote{border-left:3px solid #3b82f6;padding-left:1em;margin-left:0;color:#94a3b8;font-style:italic}
+.waitlist-input:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.15)}
+.logo-glow{filter:drop-shadow(0 0 8px rgba(59,130,246,0.4))}
+
+/* === CHAT UI === */
+.chat-container{display:flex;flex-direction:column;height:100%}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.chat-message{display:flex;gap:10px;max-width:100%}
+.chat-message.user{flex-direction:row-reverse}
+.chat-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.chat-message.user .chat-avatar{background:#3b82f6;color:white}
+.chat-message.assistant .chat-avatar{background:#1e293b;color:#94a3b8;border:1px solid rgba(148,163,184,0.2)}
+.chat-bubble{max-width:80%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word}
+.chat-message.user .chat-bubble{background:#3b82f6;color:white;border-bottom-right-radius:4px}
+.chat-message.assistant .chat-bubble{background:#1e293b;color:#cbd5e1;border:1px solid rgba(148,163,184,0.1);border-bottom-left-radius:4px}
+.chat-message.assistant .chat-bubble strong{color:#60a5fa}
+.chat-message.assistant .chat-bubble em{color:#fbbf24}
+.chat-input-area{padding:12px 16px;border-top:1px solid rgba(148,163,184,0.1);background:rgba(15,23,42,0.5)}
+.chat-input-wrapper{display:flex;gap:8px;align-items:flex-end}
+.chat-input{flex:1;background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.15);border-radius:12px;padding:10px 14px;color:#e2e8f0;font-size:13px;resize:none;min-height:44px;max-height:120px;outline:none}
+.chat-input:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,0.1)}
+.chat-send-btn{padding:10px 14px;background:#3b82f6;color:white;border-radius:10px;font-size:13px;font-weight:600;transition:all 0.2s;flex-shrink:0}
+.chat-send-btn:hover:not(:disabled){background:#2563eb}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed}
+.chat-typing{display:flex;gap:4px;padding:8px 14px}
+.chat-typing-dot{width:6px;height:6px;background:#64748b;border-radius:50%;animation:typingBounce 1.4s infinite ease-in-out both}
+.chat-typing-dot:nth-child(1){animation-delay:-0.32s}
+.chat-typing-dot:nth-child(2){animation-delay:-0.16s}
+@keyframes typingBounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+
+/* === MERGE UI === */
+.merge-list{display:flex;flex-direction:column;gap:8px}
+.merge-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(15,23,42,0.5);border:1px solid rgba(148,163,184,0.1);border-radius:12px;transition:all 0.2s}
+.merge-item:hover{border-color:rgba(59,130,246,0.2)}
+.merge-handle{cursor:grab;padding:4px;color:#475569}
+.merge-handle:active{cursor:grabbing}
+.merge-info{flex:1;min-width:0}
+.merge-actions{display:flex;gap:4px}
+.merge-btn{padding:6px 12px;background:#3b82f6;color:white;border-radius:8px;font-size:12px;font-weight:600;transition:all 0.2s}
+.merge-btn:hover:not(:disabled){background:#2563eb}
+.merge-btn:disabled{opacity:0.4;cursor:not-allowed}
+.merge-btn-secondary{padding:6px 12px;background:rgba(148,163,184,0.1);color:#94a3b8;border-radius:8px;font-size:12px;font-weight:500;transition:all 0.2s}
+.merge-btn-secondary:hover{background:rgba(148,163,184,0.2);color:#e2e8f0}
+
+/* === USAGE BADGE === */
+.usage-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;font-size:10px;font-weight:600;border-radius:6px}
+.usage-badge.empty{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.2);color:#f87171}
+.usage-badge.unlimited{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.2);color:#34d399}
 </style>
+<base target="_blank">
 </head>
 <body class="bg-slate-950 text-slate-200 min-h-screen antialiased selection:bg-blue-500/30 selection:text-blue-200">
 
 <div id="toast-container" class="fixed top-24 right-6 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
+<!-- PRO MODAL -->
 <div id="pro-modal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay">
 <div class="modal-content glass-panel rounded-2xl p-8 max-w-md w-full mx-4 border border-amber-500/20">
 <div class="flex items-center gap-3 mb-6">
@@ -92,12 +153,214 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.1);box-shadow:
 <div class="flex items-start gap-3"><svg class="w-5 h-5 text-amber-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><div><p class="text-sm font-medium text-slate-200">Ask Your Document (Q&A)</p><p class="text-xs text-slate-500">Chat with contracts, briefs, reports</p></div></div>
 <div class="flex items-start gap-3"><svg class="w-5 h-5 text-amber-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><div><p class="text-sm font-medium text-slate-200">Searchable PDF Output</p><p class="text-xs text-slate-500">Render scanned PDFs with text layer</p></div></div>
 <div class="flex items-start gap-3"><svg class="w-5 h-5 text-amber-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><div><p class="text-sm font-medium text-slate-200">OCR Confidence Scoring</p><p class="text-xs text-slate-500">Flag low-confidence words in red</p></div></div>
+<div class="flex items-start gap-3"><svg class="w-5 h-5 text-amber-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><div><p class="text-sm font-medium text-slate-200">PDF Merge & Split</p><p class="text-xs text-slate-500">Combine multiple PDFs into one</p></div></div>
 </div>
 <div class="space-y-3">
-<button onclick="closeProModal()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold rounded-xl transition-colors">Join Waitlist &mdash; Free</button>
+<button onclick="showWaitlistForm()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold rounded-xl transition-colors">Join Waitlist &mdash; Free</button>
 <button onclick="closeProModal()" class="w-full py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors">Maybe later</button>
 </div>
-<p class="text-xs text-slate-600 mt-4 text-center">Launching Q3 2026. Nigerian legal &amp; compliance focus.</p>
+<p class="text-xs text-slate-600 mt-4 text-center">Launching Q4 2026. Nigerian legal &amp; compliance focus.</p>
+</div>
+</div>
+
+<!-- PAYWALL MODAL -->
+<div id="paywall-modal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay">
+<div class="modal-content glass-panel rounded-2xl p-8 max-w-md w-full mx-4 border border-amber-500/20">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center border border-amber-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+</div>
+<div><h3 class="text-lg font-bold text-white">Free Limit Reached</h3><p class="text-sm text-slate-400">You have used all free AI credits</p></div>
+</div>
+<div id="paywall-content" class="space-y-4 mb-6">
+<p class="text-sm text-slate-300">You have used <strong id="paywall-used" class="text-amber-400">0</strong> of <strong id="paywall-limit" class="text-amber-400">0</strong> free AI uses.</p>
+<p class="text-xs text-slate-500">To continue using AI features, you can:</p>
+<div class="space-y-3">
+<div class="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+<div class="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20 shrink-0"><svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg></div>
+<div><p class="text-sm font-medium text-slate-200">Use your own API key</p><p class="text-xs text-slate-500">Enter your Anthropic API key for unlimited access. Your key stays in your browser.</p></div>
+</div>
+<div class="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+<div class="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center border border-amber-500/20 shrink-0"><svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+<div><p class="text-sm font-medium text-slate-200">Join the Pro waitlist</p><p class="text-xs text-slate-500">Get notified when unlimited AI features launch in Q4 2026.</p></div>
+</div>
+</div>
+</div>
+<div class="space-y-3">
+<button onclick="showApiKeyModal(); closePaywallModal();" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-colors">Enter API Key</button>
+<button onclick="showWaitlistForm(); closePaywallModal();" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold rounded-xl transition-colors">Join Waitlist</button>
+<button onclick="closePaywallModal()" class="w-full py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors">Maybe later</button>
+</div>
+</div>
+</div>
+
+<!-- WAITLIST FORM MODAL -->
+<div id="waitlist-modal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay">
+<div class="modal-content glass-panel rounded-2xl p-8 max-w-md w-full mx-4 border border-amber-500/20">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center border border-amber-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+</div>
+<div><h3 class="text-lg font-bold text-white">Join the Waitlist</h3><p class="text-sm text-slate-400">Be first to access Pro features</p></div>
+</div>
+<form id="waitlist-form" onsubmit="submitWaitlist(event)">
+<div class="space-y-4 mb-6">
+<div>
+<label class="block text-xs text-slate-500 mb-1.5 font-medium">Email Address</label>
+<input type="email" id="waitlist-email" required placeholder="you@company.com" class="waitlist-input w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-600 transition-all">
+</div>
+<div>
+<label class="block text-xs text-slate-500 mb-1.5 font-medium">Use Case (optional)</label>
+<select id="waitlist-usecase" class="waitlist-input w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 transition-all cursor-pointer">
+<option value="">Select your use case...</option>
+<option value="legal">Legal & Compliance</option>
+<option value="finance">Finance & Accounting</option>
+<option value="academic">Academic Research</option>
+<option value="business">Business Operations</option>
+<option value="personal">Personal Use</option>
+<option value="other">Other</option>
+</select>
+</div>
+<div class="flex items-start gap-2">
+<input type="checkbox" id="waitlist-consent" required class="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500/20">
+<label for="waitlist-consent" class="text-xs text-slate-500 leading-relaxed">I agree to receive updates about Cyber Nate Pro. No spam, unsubscribe anytime.</label>
+</div>
+</div>
+<div class="space-y-3">
+<button type="submit" id="waitlist-submit-btn" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+<span id="waitlist-btn-text">Join Waitlist</span>
+<div id="waitlist-btn-loader" class="loader-ring w-4 h-4 hidden"></div>
+</button>
+<button type="button" onclick="closeWaitlistModal()" class="w-full py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors">Cancel</button>
+</div>
+</form>
+<div id="waitlist-success" class="hidden text-center py-4">
+<div class="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+</div>
+<h4 class="text-lg font-semibold text-white mb-2">You are on the list!</h4>
+<p class="text-sm text-slate-400 mb-4">We will email you when Pro features launch in Q4 2026.</p>
+<button onclick="closeWaitlistModal()" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors">Got it</button>
+</div>
+<p class="text-xs text-slate-600 mt-4 text-center">Launching Q4 2026. Nigerian legal &amp; compliance focus.</p>
+</div>
+</div>
+
+<!-- AI SUMMARY MODAL -->
+<div id="ai-modal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay">
+<div class="modal-content glass-panel rounded-2xl p-0 max-w-2xl w-full mx-4 border border-blue-500/20 overflow-hidden flex flex-col max-h-[85vh]">
+<div class="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/30">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+</div>
+<div>
+<h3 class="text-lg font-bold text-white">AI Summary</h3>
+<p class="text-xs text-slate-400">Powered by Claude Sonnet</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span id="ai-usage-badge" class="usage-badge">0 / 3</span>
+<button onclick="copyAISummary()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-white" title="Copy summary"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></button>
+<button onclick="downloadAISummary()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-white" title="Download summary"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></button>
+<button onclick="closeAIModal()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-red-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6">
+<div id="ai-loading" class="flex flex-col items-center justify-center py-12">
+<div class="loader-ring w-10 h-10 mb-4"></div>
+<p class="text-sm text-slate-400">Analyzing document with Claude...</p>
+<p class="text-xs text-slate-600 mt-1">This may take 10-30 seconds</p>
+</div>
+<div id="ai-error" class="hidden text-center py-8">
+<div class="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-red-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+</div>
+<p class="text-sm text-slate-400 mb-2">AI summary failed</p>
+<p id="ai-error-msg" class="text-xs text-slate-600">Please check your API key and try again.</p>
+</div>
+<div id="ai-content" class="hidden ai-summary-content text-sm leading-relaxed"></div>
+</div>
+<div class="px-6 py-3 border-t border-slate-700/50 bg-slate-800/30 flex items-center justify-between">
+<span class="text-xs text-slate-500">Claude Sonnet via Anthropic API</span>
+<button onclick="regenerateSummary()" class="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+Regenerate
+</button>
+</div>
+</div>
+</div>
+
+<!-- Q&A CHAT MODAL -->
+<div id="qa-modal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay">
+<div class="modal-content glass-panel rounded-2xl p-0 max-w-3xl w-full mx-4 border border-blue-500/20 overflow-hidden flex flex-col max-h-[90vh]">
+<div class="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/30">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+</div>
+<div>
+<h3 class="text-lg font-bold text-white">Ask Your Document</h3>
+<p class="text-xs text-slate-400">Chat with your extracted text using Claude</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span id="qa-usage-badge" class="usage-badge">0 / 10</span>
+<button onclick="clearQAChat()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-white" title="Clear chat"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+<button onclick="closeQAModal()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-red-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+</div>
+</div>
+<div class="flex-1 overflow-hidden flex flex-col">
+<div id="qa-messages" class="chat-messages">
+<div class="chat-message assistant">
+<div class="chat-avatar">AI</div>
+<div class="chat-bubble">
+<p>Hello! I have read your document. Ask me anything about it — summarize specific sections, extract key facts, explain legal terms, or find deadlines and action items.</p>
+</div>
+</div>
+</div>
+<div class="chat-input-area">
+<div class="chat-input-wrapper">
+<textarea id="qa-input" class="chat-input" rows="1" placeholder="Ask a question about your document..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQAMessage()}"></textarea>
+<button id="qa-send-btn" onclick="sendQAMessage()" class="chat-send-btn">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+</button>
+</div>
+<p class="text-[10px] text-slate-600 mt-2 text-center">Document context is sent with every message. Clear chat to start fresh.</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- API KEY SETUP MODAL -->
+<div id="apikey-modal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay">
+<div class="modal-content glass-panel rounded-2xl p-8 max-w-md w-full mx-4 border border-blue-500/20">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+</div>
+<div><h3 class="text-lg font-bold text-white">Set Up AI Features</h3><p class="text-sm text-slate-400">Enter your Anthropic API key</p></div>
+</div>
+<div class="space-y-4 mb-6">
+<div>
+<label class="block text-xs text-slate-500 mb-1.5 font-medium">Anthropic API Key</label>
+<input type="password" id="api-key-input" placeholder="sk-ant-api03-..." class="waitlist-input w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-600 transition-all font-mono">
+<p class="text-xs text-slate-600 mt-1.5">Your key is stored locally in your browser via localStorage. Any JavaScript on this page can read it. For maximum security, use a dedicated API key with usage limits.</p>
+</div>
+<div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/30">
+<p class="text-xs text-slate-400 mb-2"><strong class="text-slate-300">How to get a key:</strong></p>
+<ol class="text-xs text-slate-500 space-y-1 list-decimal list-inside">
+<li>Go to <a href="https://console.anthropic.com/" target="_blank" class="text-blue-400 hover:text-blue-300">console.anthropic.com</a></li>
+<li>Sign up or log in</li>
+<li>Click "Get API keys" in the top right</li>
+<li>Create a new key and paste it here</li>
+</ol>
+</div>
+</div>
+<div class="space-y-3">
+<button onclick="saveApiKey()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-colors">Save API Key</button>
+<button onclick="closeApiKeyModal()" class="w-full py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors">Cancel</button>
+</div>
 </div>
 </div>
 
@@ -106,9 +369,8 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.1);box-shadow:
 <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
 <div class="flex items-center gap-4">
 <div class="relative">
-<div class="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 relative overflow-hidden">
-<div class="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-700 opacity-90"></div>
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+<div class="w-11 h-11 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 relative overflow-hidden bg-slate-900">
+<img src="data:image/png;base64,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" alt="Cyber Nate Logo" class="w-9 h-9 object-contain relative z-10 logo-glow">
 </div>
 <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-900"></div>
 </div>
@@ -148,6 +410,7 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.1);box-shadow:
 <button id="mode-ocr" class="mode-btn active px-4 py-2 rounded-lg text-sm font-medium" onclick="setMode('ocr')"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>OCR Text</span></button>
 <button id="mode-word" class="mode-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400" onclick="setMode('word')"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Word Doc</span></button>
 <button id="mode-images" class="mode-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400" onclick="setMode('images')"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Images</span></button>
+<button id="mode-merge" class="mode-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400" onclick="setMode('merge')"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>Merge PDFs</span></button>
 </div>
 </div>
 </div>
@@ -156,15 +419,17 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.1);box-shadow:
 
 <main class="max-w-7xl mx-auto px-4 md:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-5 h-[calc(100vh-80px)] min-h-[600px]">
 <div class="lg:col-span-7 flex flex-col gap-4 h-full overflow-hidden">
+
+<!-- DROP ZONE -->
 <div id="drop-zone" class="drop-zone glass-panel rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer relative group">
 <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".pdf" multiple/>
 <div id="upload-content" class="transition-all duration-300">
 <div class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
 </div>
-<h3 class="text-lg font-semibold text-slate-200 mb-1">Drop your PDFs here</h3>
+<h3 id="drop-title" class="text-lg font-semibold text-slate-200 mb-1">Drop your PDFs here</h3>
 <p class="text-sm text-slate-500">or click to browse files</p>
-<p class="text-xs text-slate-600 mt-3" id="upload-hint">Batch upload supported &mdash; process multiple files at once</p>
+<p class="text-xs text-slate-600 mt-3" id="upload-hint">Scanned PDFs supported for OCR &mdash; select page range below</p>
 </div>
 <div id="file-info" class="hidden w-full">
 <div class="flex items-center gap-4">
@@ -191,6 +456,30 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.1);box-shadow:
 </div>
 </div>
 
+<!-- MERGE PANEL -->
+<div id="merge-panel" class="glass-panel rounded-2xl p-5 hidden flex-1 overflow-hidden flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+Merge PDFs
+</h3>
+<span id="merge-count" class="text-xs text-slate-500">0 files</span>
+</div>
+<div id="merge-list" class="merge-list flex-1 overflow-y-auto mb-4"></div>
+<div class="flex gap-2">
+<button onclick="document.getElementById('merge-file-input').click()" class="merge-btn-secondary flex-1 flex items-center justify-center gap-2">
+<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+Add PDFs
+</button>
+<button onclick="mergePDFs()" id="btn-merge-action" class="merge-btn flex-1 flex items-center justify-center gap-2" disabled>
+<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+Merge & Download
+</button>
+</div>
+<input type="file" id="merge-file-input" class="hidden" accept=".pdf" multiple onchange="handleMergeFiles(event)"/>
+</div>
+
+<!-- PAGE RANGE PANEL -->
 <div id="page-range-panel" class="glass-panel rounded-xl p-4 hidden">
 <div class="flex items-center justify-between mb-3">
 <h4 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
@@ -210,6 +499,7 @@ Page Range
 </div>
 </div>
 
+<!-- PREVIEW CONTAINER -->
 <div id="preview-container" class="glass-panel rounded-2xl flex-1 overflow-hidden flex flex-col relative hidden">
 <div class="px-4 py-3 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/30">
 <div class="flex items-center gap-3">
@@ -227,6 +517,7 @@ Preview
 <div class="flex-1 overflow-y-auto p-6 bg-slate-900/40 flex justify-center items-start"><canvas id="pdf-canvas"></canvas></div>
 </div>
 
+<!-- IMAGES CONTAINER -->
 <div id="images-container" class="glass-panel rounded-2xl flex-1 overflow-hidden flex flex-col relative hidden">
 <div class="px-4 py-3 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/30">
 <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
@@ -239,7 +530,10 @@ Extracted Images
 </div>
 </div>
 
+<!-- RIGHT PANEL -->
 <div class="lg:col-span-5 flex flex-col gap-4 h-full overflow-hidden">
+
+<!-- STATUS -->
 <div class="glass-panel p-4 rounded-2xl flex items-center gap-4">
 <div id="status-icon" class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700/50">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -252,12 +546,14 @@ Extracted Images
 <button id="btn-retry" onclick="retryProcessing()" class="hidden px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">Retry</button>
 </div>
 
+<!-- STATS -->
 <div id="stats-bar" class="hidden grid grid-cols-3 gap-3">
 <div class="stat-card rounded-xl p-3 text-center"><div class="text-xs text-slate-500 mb-1">Characters</div><div id="stat-chars" class="text-lg font-bold text-blue-400 font-mono">0</div></div>
 <div class="stat-card rounded-xl p-3 text-center"><div class="text-xs text-slate-500 mb-1">Words</div><div id="stat-words" class="text-lg font-bold text-emerald-400 font-mono">0</div></div>
 <div class="stat-card rounded-xl p-3 text-center"><div class="text-xs text-slate-500 mb-1">Pages</div><div id="stat-pages" class="text-lg font-bold text-purple-400 font-mono">0</div></div>
 </div>
 
+<!-- FIND/REPLACE -->
 <div id="find-replace-bar" class="find-bar rounded-xl p-3 hidden">
 <div class="flex items-center gap-2">
 <div class="flex-1 relative">
@@ -272,6 +568,51 @@ Extracted Images
 </div>
 </div>
 
+<!-- AI SUMMARY BAR -->
+<div id="ai-summary-bar" class="ai-summary-panel rounded-xl p-4 hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+</div>
+<div>
+<h4 class="text-sm font-semibold text-blue-400">AI Document Summary</h4>
+<p class="text-xs text-slate-500 mt-0.5">Generate a structured summary with Claude</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span id="ai-summary-badge" class="usage-badge">0 / 3</span>
+<button onclick="generateAISummary()" id="btn-ai-summary" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+Summarize
+</button>
+</div>
+</div>
+</div>
+
+<!-- Q&A BAR -->
+<div id="qa-bar" class="ai-summary-panel rounded-xl p-4 hidden border-purple-500/20">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center border border-purple-500/20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+</div>
+<div>
+<h4 class="text-sm font-semibold text-purple-400">Ask Your Document</h4>
+<p class="text-xs text-slate-500 mt-0.5">Chat with your extracted text using Claude</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span id="qa-bar-badge" class="usage-badge">0 / 10</span>
+<button onclick="openQAModal()" id="btn-qa-open" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+Open Chat
+</button>
+</div>
+</div>
+</div>
+
+<!-- PRO PROMO -->
 <div class="glass-panel rounded-xl p-4 border border-amber-500/20 relative overflow-hidden">
 <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
 <div class="relative flex items-start gap-3">
@@ -279,24 +620,21 @@ Extracted Images
 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
 </div>
 <div class="flex-1">
-<h4 class="text-sm font-semibold text-amber-400 flex items-center gap-2">Pro Features Coming Soon <span class="pro-badge">Q3 2026</span></h4>
-<p class="text-xs text-slate-500 mt-1">AI summarization, document Q&amp;A, searchable PDF output, and confidence scoring.</p>
+<h4 class="text-sm font-semibold text-amber-400 flex items-center gap-2">Pro Features <span class="pro-badge">Q4 2026</span></h4>
+<p class="text-xs text-slate-500 mt-1">AI summarization, document Q&A, searchable PDF output, confidence scoring, and PDF merge.</p>
 <div class="flex gap-2 mt-3">
-<button onclick="showProModal()" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg transition-colors font-medium">Join Waitlist</button>
+<button onclick="showWaitlistForm()" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg transition-colors font-medium">Join Waitlist</button>
 <button onclick="showProModal()" class="text-xs text-slate-500 hover:text-slate-300 px-3 py-1.5 transition-colors">Learn more</button>
 </div>
 </div>
 </div>
 </div>
 
+<!-- OUTPUT PANEL -->
 <div class="glass-panel rounded-2xl flex-1 flex flex-col overflow-hidden relative">
 <div class="px-4 py-3 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/30">
 <h3 id="output-title" class="text-sm font-semibold text-slate-300">Output</h3>
 <div class="flex items-center gap-1">
-<div class="relative pro-locked rounded-lg mr-1">
-<select disabled class="appearance-none bg-slate-800 border border-slate-700 text-slate-500 text-xs rounded-lg px-3 py-1.5 pr-8 cursor-not-allowed"><option>.txt</option><option>.docx</option><option>.md</option><option>.csv</option></select>
-<div class="pro-tooltip"><span onclick="showProModal()"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Pro</span></div>
-</div>
 <button onclick="copyOutput()" id="btn-copy" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-white" title="Copy to clipboard"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></button>
 <button onclick="downloadOutput()" id="btn-download" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-white" title="Download"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></button>
 <button onclick="clearOutput()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-red-400" title="Clear output"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
@@ -323,8 +661,8 @@ Extracted Images
 <span>&copy; Cyber Nate. Privacy-first processing.</span>
 <div class="flex items-center gap-4">
 <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500/50"></span>Client-side only</span>
-<a href="#" class="hover:text-slate-400 transition-colors">Privacy</a>
-<a href="#" class="hover:text-slate-400 transition-colors">Terms</a>
+<a href="javascript:void(0)" onclick="showToast('Privacy policy coming soon', 'info')" class="hover:text-slate-400 transition-colors">Privacy</a>
+<a href="javascript:void(0)" onclick="showToast('Terms of service coming soon', 'info')" class="hover:text-slate-400 transition-colors">Terms</a>
 <a href="https://cybernatesec.netlify.app/" target="_blank" class="hover:text-blue-400 transition-colors">Portfolio</a>
 </div>
 </div>
@@ -334,40 +672,277 @@ Extracted Images
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const { Document, Packer, Paragraph, TextRun, PageBreak } = docx;
 
-let currentMode = 'ocr', currentPDF = null, isProcessing = false, currentFile = null, batchFiles = [], extractedPages = [], extractedImages = [], currentPageNum = 1, totalPages = 0, ocrText = '';
+let currentMode = 'ocr', currentPDF = null, isProcessing = false, currentFile = null, batchFiles = [], extractedPages = [], extractedImages = [], currentPageNum = 1, totalPages = 0, ocrText = '', aiSummaryText = '';
+let qaMessages = [], mergeFiles = [];
 
-const dropZone = document.getElementById('drop-zone'), fileInput = document.getElementById('file-input'), uploadContent = document.getElementById('upload-content'), fileInfo = document.getElementById('file-info'), fileNameEl = document.getElementById('file-name'), fileSizeEl = document.getElementById('file-size'), filePagesEl = document.getElementById('file-pages'), batchFilesEl = document.getElementById('batch-files'), batchListEl = document.getElementById('batch-list'), batchCountEl = document.getElementById('batch-count'), previewContainer = document.getElementById('preview-container'), imagesContainer = document.getElementById('images-container'), imagesGrid = document.getElementById('images-grid'), canvas = document.getElementById('pdf-canvas'), ctx = canvas.getContext('2d'), outputText = document.getElementById('output-text'), outputWord = document.getElementById('output-word'), outputBatch = document.getElementById('output-batch'), batchResults = document.getElementById('batch-results'), wordPagesContainer = document.getElementById('word-pages-container'), emptyState = document.getElementById('empty-state'), progressBar = document.getElementById('progress-bar'), statusTitle = document.getElementById('status-title'), statusDetail = document.getElementById('status-detail'), statusIcon = document.getElementById('status-icon'), pageIndicator = document.getElementById('page-indicator'), btnPrev = document.getElementById('btn-prev'), btnNext = document.getElementById('btn-next'), uploadHint = document.getElementById('upload-hint'), outputTitle = document.getElementById('output-title'), btnCopy = document.getElementById('btn-copy'), langSelect = document.getElementById('lang-select'), statsBar = document.getElementById('stats-bar'), btnRetry = document.getElementById('btn-retry'), pageRangePanel = document.getElementById('page-range-panel'), rangeFrom = document.getElementById('range-from'), rangeTo = document.getElementById('range-to'), findReplaceBar = document.getElementById('find-replace-bar'), findInput = document.getElementById('find-input'), replaceInput = document.getElementById('replace-input'), proModal = document.getElementById('pro-modal');
+const USAGE_LIMITS = { summaries: 3, qa: 10 };
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 
+const dropZone = document.getElementById('drop-zone'), fileInput = document.getElementById('file-input'), uploadContent = document.getElementById('upload-content'), fileInfo = document.getElementById('file-info'), fileNameEl = document.getElementById('file-name'), fileSizeEl = document.getElementById('file-size'), filePagesEl = document.getElementById('file-pages'), batchFilesEl = document.getElementById('batch-files'), batchListEl = document.getElementById('batch-list'), batchCountEl = document.getElementById('batch-count'), previewContainer = document.getElementById('preview-container'), imagesContainer = document.getElementById('images-container'), imagesGrid = document.getElementById('images-grid'), canvas = document.getElementById('pdf-canvas'), ctx = canvas.getContext('2d'), outputText = document.getElementById('output-text'), outputWord = document.getElementById('output-word'), outputBatch = document.getElementById('output-batch'), batchResults = document.getElementById('batch-results'), wordPagesContainer = document.getElementById('word-pages-container'), emptyState = document.getElementById('empty-state'), progressBar = document.getElementById('progress-bar'), statusTitle = document.getElementById('status-title'), statusDetail = document.getElementById('status-detail'), statusIcon = document.getElementById('status-icon'), pageIndicator = document.getElementById('page-indicator'), btnPrev = document.getElementById('btn-prev'), btnNext = document.getElementById('btn-next'), uploadHint = document.getElementById('upload-hint'), dropTitle = document.getElementById('drop-title'), outputTitle = document.getElementById('output-title'), btnCopy = document.getElementById('btn-copy'), langSelect = document.getElementById('lang-select'), statsBar = document.getElementById('stats-bar'), btnRetry = document.getElementById('btn-retry'), pageRangePanel = document.getElementById('page-range-panel'), rangeFrom = document.getElementById('range-from'), rangeTo = document.getElementById('range-to'), findReplaceBar = document.getElementById('find-replace-bar'), findInput = document.getElementById('find-input'), replaceInput = document.getElementById('replace-input'), proModal = document.getElementById('pro-modal'), waitlistModal = document.getElementById('waitlist-modal'), aiModal = document.getElementById('ai-modal'), apiKeyModal = document.getElementById('apikey-modal'), paywallModal = document.getElementById('paywall-modal'), qaModal = document.getElementById('qa-modal'), aiSummaryBar = document.getElementById('ai-summary-bar'), qaBar = document.getElementById('qa-bar'), mergePanel = document.getElementById('merge-panel'), mergeList = document.getElementById('merge-list'), mergeCount = document.getElementById('merge-count'), btnMergeAction = document.getElementById('btn-merge-action');
+
+// ===== USAGE COUNTER =====
+function getUsage() {
+    return JSON.parse(localStorage.getItem('cybernate_usage') || '{"summaries":0,"qa":0}');
+}
+function saveUsage(u) {
+    localStorage.setItem('cybernate_usage', JSON.stringify(u));
+}
+function incrementUsage(type) {
+    const u = getUsage();
+    u[type] = (u[type] || 0) + 1;
+    saveUsage(u);
+    updateUsageBadges();
+}
+function checkGate(type) {
+    if (getApiKey()) return true;
+    const u = getUsage();
+    const used = u[type] || 0;
+    const limit = USAGE_LIMITS[type];
+    if (used >= limit) {
+        showPaywallModal(type);
+        return false;
+    }
+    return true;
+}
+function updateUsageBadges() {
+    const u = getUsage();
+    const hasKey = !!getApiKey();
+    const sumEl = document.getElementById('ai-summary-badge');
+    const qaEl = document.getElementById('qa-usage-badge');
+    const qaBarEl = document.getElementById('qa-bar-badge');
+    if (hasKey) {
+        [sumEl, qaEl, qaBarEl].forEach(el => { if(el) { el.textContent = 'Unlimited'; el.className = 'usage-badge unlimited'; } });
+    } else {
+        if (sumEl) { sumEl.textContent = (u.summaries || 0) + ' / ' + USAGE_LIMITS.summaries; if((u.summaries||0) >= USAGE_LIMITS.summaries) sumEl.className='usage-badge empty'; else sumEl.className='usage-badge'; }
+        if (qaEl) { qaEl.textContent = (u.qa || 0) + ' / ' + USAGE_LIMITS.qa; if((u.qa||0) >= USAGE_LIMITS.qa) qaEl.className='usage-badge empty'; else qaEl.className='usage-badge'; }
+        if (qaBarEl) { qaBarEl.textContent = (u.qa || 0) + ' / ' + USAGE_LIMITS.qa; if((u.qa||0) >= USAGE_LIMITS.qa) qaBarEl.className='usage-badge empty'; else qaBarEl.className='usage-badge'; }
+    }
+}
+
+// ===== MODAL MANAGEMENT =====
 function showProModal() { proModal.classList.remove('hidden'); proModal.classList.add('flex'); }
 function closeProModal() { proModal.classList.add('hidden'); proModal.classList.remove('flex'); }
 proModal.addEventListener('click', (e) => { if (e.target === proModal) closeProModal(); });
 
+function showPaywallModal(type) {
+    const u = getUsage();
+    document.getElementById('paywall-used').textContent = u[type] || 0;
+    document.getElementById('paywall-limit').textContent = USAGE_LIMITS[type];
+    paywallModal.classList.remove('hidden'); paywallModal.classList.add('flex');
+}
+function closePaywallModal() { paywallModal.classList.add('hidden'); paywallModal.classList.remove('flex'); }
+paywallModal.addEventListener('click', (e) => { if (e.target === paywallModal) closePaywallModal(); });
+
+function showWaitlistForm() { closeProModal(); closePaywallModal(); waitlistModal.classList.remove('hidden'); waitlistModal.classList.add('flex'); document.getElementById('waitlist-form').classList.remove('hidden'); document.getElementById('waitlist-success').classList.add('hidden'); }
+function closeWaitlistModal() { waitlistModal.classList.add('hidden'); waitlistModal.classList.remove('flex'); }
+waitlistModal.addEventListener('click', (e) => { if (e.target === waitlistModal) closeWaitlistModal(); });
+
+function showAIModal() { aiModal.classList.remove('hidden'); aiModal.classList.add('flex'); updateUsageBadges(); }
+function closeAIModal() { aiModal.classList.add('hidden'); aiModal.classList.remove('flex'); }
+aiModal.addEventListener('click', (e) => { if (e.target === aiModal) closeAIModal(); });
+
+function openQAModal() { qaModal.classList.remove('hidden'); qaModal.classList.add('flex'); updateUsageBadges(); }
+function closeQAModal() { qaModal.classList.add('hidden'); qaModal.classList.remove('flex'); }
+qaModal.addEventListener('click', (e) => { if (e.target === qaModal) closeQAModal(); });
+
+function showApiKeyModal() { apiKeyModal.classList.remove('hidden'); apiKeyModal.classList.add('flex'); const saved = localStorage.getItem('cybernate_api_key'); if (saved) document.getElementById('api-key-input').value = saved; }
+function closeApiKeyModal() { apiKeyModal.classList.add('hidden'); apiKeyModal.classList.remove('flex'); }
+apiKeyModal.addEventListener('click', (e) => { if (e.target === apiKeyModal) closeApiKeyModal(); });
+
+function saveApiKey() {
+    const key = document.getElementById('api-key-input').value.trim();
+    if (!key) { showToast('Please enter an API key', 'warning'); return; }
+    if (!key.startsWith('sk-ant-')) { showToast('Invalid Anthropic API key format', 'error'); return; }
+    localStorage.setItem('cybernate_api_key', key);
+    closeApiKeyModal();
+    updateUsageBadges();
+    showToast('API key saved. Unlimited AI access enabled.', 'success');
+}
+function getApiKey() { return localStorage.getItem('cybernate_api_key'); }
+
+// ===== WAITLIST SUBMISSION =====
+async function submitWaitlist(e) {
+    e.preventDefault();
+    const email = document.getElementById('waitlist-email').value.trim();
+    const usecase = document.getElementById('waitlist-usecase').value;
+    const btn = document.getElementById('waitlist-submit-btn');
+    const btnText = document.getElementById('waitlist-btn-text');
+    const btnLoader = document.getElementById('waitlist-btn-loader');
+    if (!email || !document.getElementById('waitlist-consent').checked) return;
+    btn.disabled = true; btnText.textContent = 'Joining...'; btnLoader.classList.remove('hidden');
+    try {
+        const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xnqevwqb';
+        const response = await fetch(FORMSPREE_ENDPOINT, {
+            method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, usecase: usecase, product: 'cybernate-pro', timestamp: new Date().toISOString() })
+        });
+        if (response.ok) {
+            document.getElementById('waitlist-form').classList.add('hidden');
+            document.getElementById('waitlist-success').classList.remove('hidden');
+            showToast('Successfully joined the waitlist!', 'success');
+        } else { throw new Error('Form submission failed'); }
+    } catch (err) {
+        const waitlist = JSON.parse(localStorage.getItem('cybernate_waitlist') || '[]');
+        waitlist.push({ email, usecase, date: new Date().toISOString() });
+        localStorage.setItem('cybernate_waitlist', JSON.stringify(waitlist));
+        document.getElementById('waitlist-form').classList.add('hidden');
+        document.getElementById('waitlist-success').classList.remove('hidden');
+        showToast('Joined waitlist (stored locally)', 'success');
+    } finally { btn.disabled = false; btnText.textContent = 'Join Waitlist'; btnLoader.classList.add('hidden'); }
+}
+
+// ===== AI SUMMARIZATION =====
+async function generateAISummary() {
+    if (!checkGate('summaries')) return;
+    const apiKey = getApiKey();
+    const textToSummarize = ocrText || extractedPages.join('\n\n');
+    if (!textToSummarize.trim()) { showToast('No text to summarize. Run OCR first.', 'warning'); return; }
+    showAIModal();
+    document.getElementById('ai-loading').classList.remove('hidden');
+    document.getElementById('ai-error').classList.add('hidden');
+    document.getElementById('ai-content').classList.add('hidden');
+    try {
+        const truncatedText = textToSummarize.length > 15000 ? textToSummarize.substring(0, 15000) + '\n\n[Document truncated for analysis...]' : textToSummarize;
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey || '', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+            body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 2048, messages: [{ role: 'user', content: `Please provide a structured summary of the following document. Format your response in Markdown with clear sections:\n\n**Document Analysis Request:**\n- Create a concise executive summary (2-3 sentences)\n- List the key points as bullet points\n- Identify any action items or deadlines mentioned\n- Note the document type and apparent purpose\n- Highlight any important names, dates, or figures\n\nHere is the document text:\n\n${truncatedText}` }] })
+        });
+        if (!response.ok) { const errData = await response.json().catch(() => ({})); throw new Error(errData.error?.message || `API Error: ${response.status}`); }
+        const data = await response.json();
+        const summary = data.content?.[0]?.text || 'No summary generated.';
+        aiSummaryText = summary;
+        document.getElementById('ai-loading').classList.add('hidden');
+        document.getElementById('ai-content').classList.remove('hidden');
+        document.getElementById('ai-content').innerHTML = marked.parse(summary);
+        incrementUsage('summaries');
+        showToast('AI summary generated!', 'success');
+    } catch (error) {
+        console.error('AI Summary error:', error);
+        document.getElementById('ai-loading').classList.add('hidden');
+        document.getElementById('ai-error').classList.remove('hidden');
+        document.getElementById('ai-error-msg').textContent = error.message || 'Failed to generate summary. Check your API key and try again.';
+        showToast('AI summary failed: ' + error.message, 'error');
+    }
+}
+function regenerateSummary() { generateAISummary(); }
+function copyAISummary() { if (aiSummaryText) { navigator.clipboard.writeText(aiSummaryText).then(() => showToast('Summary copied!', 'success')); } }
+function downloadAISummary() { if (!aiSummaryText) return; const blob = new Blob([aiSummaryText], { type: 'text/markdown' }); triggerDownload(blob, 'cybernate-ai-summary.md'); showToast('Summary downloaded', 'success'); }
+
+// ===== Q&A CHAT =====
+function clearQAChat() {
+    qaMessages = [];
+    const container = document.getElementById('qa-messages');
+    container.innerHTML = `<div class="chat-message assistant"><div class="chat-avatar">AI</div><div class="chat-bubble"><p>Hello! I have read your document. Ask me anything about it — summarize specific sections, extract key facts, explain legal terms, or find deadlines and action items.</p></div></div>`;
+}
+function addQAMessage(role, content) {
+    const container = document.getElementById('qa-messages');
+    const div = document.createElement('div');
+    div.className = 'chat-message ' + role;
+    const avatarText = role === 'user' ? 'You' : 'AI';
+    div.innerHTML = `<div class="chat-avatar">${avatarText}</div><div class="chat-bubble">${role === 'assistant' ? marked.parse(content) : escapeHtml(content)}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+function addQATyping() {
+    const container = document.getElementById('qa-messages');
+    const div = document.createElement('div');
+    div.id = 'qa-typing';
+    div.className = 'chat-message assistant';
+    div.innerHTML = `<div class="chat-avatar">AI</div><div class="chat-bubble chat-typing"><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div></div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+function removeQATyping() {
+    const el = document.getElementById('qa-typing');
+    if (el) el.remove();
+}
+async function sendQAMessage() {
+    const input = document.getElementById('qa-input');
+    const btn = document.getElementById('qa-send-btn');
+    const text = input.value.trim();
+    if (!text) return;
+    if (!checkGate('qa')) return;
+    const docText = ocrText || extractedPages.join('\n\n');
+    if (!docText.trim()) { showToast('No document text available. Run OCR first.', 'warning'); return; }
+
+    addQAMessage('user', text);
+    qaMessages.push({ role: 'user', content: text });
+    input.value = '';
+    btn.disabled = true;
+    addQATyping();
+
+    try {
+        const truncatedDoc = docText.length > 12000 ? docText.substring(0, 12000) + '\n\n[Document truncated...]' : docText;
+        const apiKey = getApiKey();
+        const conversation = qaMessages.slice(-6);
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey || '', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+            body: JSON.stringify({
+                model: CLAUDE_MODEL, max_tokens: 2048,
+                messages: [
+                    { role: 'user', content: `You are a helpful document analysis assistant. The user has uploaded a document. Here is the document text:\n\n${truncatedDoc}\n\nPlease answer the user's questions based ONLY on the document above. If the answer is not in the document, say so clearly.` },
+                    ...conversation.map(m => ({ role: m.role, content: m.content }))
+                ]
+            })
+        });
+        removeQATyping();
+        if (!response.ok) { const errData = await response.json().catch(() => ({})); throw new Error(errData.error?.message || `API Error: ${response.status}`); }
+        const data = await response.json();
+        const reply = data.content?.[0]?.text || 'No response generated.';
+        addQAMessage('assistant', reply);
+        qaMessages.push({ role: 'assistant', content: reply });
+        incrementUsage('qa');
+    } catch (error) {
+        removeQATyping();
+        addQAMessage('assistant', 'Sorry, I encountered an error: ' + error.message + '. Please check your API key and try again.');
+        showToast('Q&A failed: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// ===== MODE & UI =====
 function setMode(mode) {
     if (isProcessing) { showToast('Please wait for current processing to complete', 'warning'); return; }
     currentMode = mode;
     document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.remove('active'); btn.classList.add('text-slate-400'); });
     document.getElementById('mode-' + mode).classList.add('active');
     document.getElementById('mode-' + mode).classList.remove('text-slate-400');
-    const hints = { ocr: 'Scanned PDFs supported for OCR -- select page range below', word: 'Converts text content to editable Word document', images: 'Extract all images embedded in the PDF' };
+
+    const hints = { ocr: 'Scanned PDFs supported for OCR — select page range below', word: 'Converts text content to editable Word document', images: 'Extract all images embedded in the PDF', merge: 'Combine multiple PDFs into a single file' };
     uploadHint.textContent = hints[mode] || 'Upload a PDF to get started';
-    pageRangePanel.classList.toggle('hidden', mode !== 'ocr');
+    dropTitle.textContent = mode === 'merge' ? 'Drop PDFs to merge' : 'Drop your PDFs here';
+
+    pageRangePanel.classList.toggle('hidden', mode !== 'ocr' && mode !== 'word');
     findReplaceBar.classList.toggle('hidden', mode !== 'ocr');
+    aiSummaryBar.classList.add('hidden');
+    qaBar.classList.add('hidden');
+    mergePanel.classList.toggle('hidden', mode !== 'merge');
+    previewContainer.classList.toggle('hidden', mode === 'merge');
+
+    if (mode === 'merge') {
+        imagesContainer.classList.add('hidden');
+    }
+
     resetOutputs();
-    if (currentFile) showFileInfo();
+    if (currentFile && mode !== 'merge') showFileInfo();
 }
 
 function resetOutputs() {
     outputText.value = ''; outputText.classList.add('hidden'); outputWord.classList.add('hidden'); outputBatch.classList.add('hidden');
     wordPagesContainer.innerHTML = ''; batchResults.innerHTML = ''; emptyState.style.display = 'flex';
-    extractedPages = []; extractedImages = []; ocrText = '';
+    extractedPages = []; extractedImages = []; ocrText = ''; aiSummaryText = ''; qaMessages = [];
     statsBar.classList.add('hidden'); updateStats();
+    aiSummaryBar.classList.add('hidden'); qaBar.classList.add('hidden');
     updateStatus('idle', 'Ready to process', 'Select a PDF and choose your mode');
     progressBar.style.width = '0%'; progressBar.className = 'h-full rounded-full w-0 transition-all duration-500 ease-out bg-blue-500';
     btnRetry.classList.add('hidden');
 }
 
-function clearAll(e) { if (e) e.stopPropagation(); currentFile = null; currentPDF = null; batchFiles = []; currentPageNum = 1; totalPages = 0; fileInput.value = ''; dropZone.classList.remove('has-file'); uploadContent.classList.remove('hidden'); fileInfo.classList.add('hidden'); batchFilesEl.classList.add('hidden'); previewContainer.classList.add('hidden'); imagesContainer.classList.add('hidden'); resetOutputs(); showToast('File cleared', 'info'); }
-function clearOutput() { outputText.value = ''; wordPagesContainer.innerHTML = ''; batchResults.innerHTML = ''; emptyState.style.display = 'flex'; ocrText = ''; updateStats(); showToast('Output cleared', 'info'); }
+function clearAll(e) { if (e) e.stopPropagation(); currentFile = null; currentPDF = null; batchFiles = []; mergeFiles = []; currentPageNum = 1; totalPages = 0; fileInput.value = ''; dropZone.classList.remove('has-file'); uploadContent.classList.remove('hidden'); fileInfo.classList.add('hidden'); batchFilesEl.classList.add('hidden'); previewContainer.classList.add('hidden'); imagesContainer.classList.add('hidden'); mergePanel.classList.add('hidden'); resetOutputs(); showToast('File cleared', 'info'); }
+function clearOutput() { outputText.value = ''; wordPagesContainer.innerHTML = ''; batchResults.innerHTML = ''; emptyState.style.display = 'flex'; ocrText = ''; aiSummaryText = ''; aiSummaryBar.classList.add('hidden'); qaBar.classList.add('hidden'); updateStats(); showToast('Output cleared', 'info'); }
 function resetPageRange() { if (totalPages > 0) { rangeFrom.value = 1; rangeTo.value = totalPages; } }
 
 ['dragenter','dragover','dragleave','drop'].forEach(e => dropZone.addEventListener(e, preventDefaults, false));
@@ -381,8 +956,121 @@ function handleDrop(e) { handleFiles({ target: { files: e.dataTransfer.files } }
 function handleFiles(e) {
     const files = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
     if (files.length === 0) { showError('Invalid file type. Please upload PDF files only.'); return; }
+    if (currentMode === 'merge') {
+        addMergeFiles(files);
+        return;
+    }
     if (files.length === 1) { currentFile = files[0]; batchFiles = []; loadPDF(currentFile); }
     else { batchFiles = files; currentFile = null; showBatchFiles(); showToast(files.length + ' files selected for batch processing', 'success'); updateStatus('idle', 'Batch Ready', files.length + ' files queued. Click a mode to process.'); }
+}
+
+// ===== MERGE FUNCTIONALITY =====
+function addMergeFiles(files) {
+    const newFiles = files.filter(f => f.type === 'application/pdf');
+    if (newFiles.length === 0) { showError('Please upload PDF files only.'); return; }
+    mergeFiles = mergeFiles.concat(newFiles);
+    renderMergeList();
+    dropZone.classList.add('has-file');
+    uploadContent.classList.add('hidden');
+    fileInfo.classList.add('hidden');
+    batchFilesEl.classList.add('hidden');
+    showToast(newFiles.length + ' PDF(s) added to merge queue', 'success');
+}
+
+function handleMergeFiles(e) {
+    addMergeFiles(Array.from(e.target.files));
+    e.target.value = '';
+}
+
+function renderMergeList() {
+    mergeCount.textContent = mergeFiles.length + ' file' + (mergeFiles.length !== 1 ? 's' : '');
+    btnMergeAction.disabled = mergeFiles.length < 2;
+    mergeList.innerHTML = mergeFiles.map((file, i) => `
+        <div class="merge-item" data-index="${i}">
+            <div class="merge-handle cursor-grab" title="Drag to reorder">
+                <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+            </div>
+            <div class="w-8 h-8 bg-red-500/10 rounded-lg flex items-center justify-center border border-red-500/20 shrink-0">
+                <svg class="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>
+            <div class="merge-info">
+                <p class="text-xs font-medium text-slate-300 truncate">${escapeHtml(file.name)}</p>
+                <p class="text-[10px] text-slate-500">${formatBytes(file.size)}</p>
+            </div>
+            <div class="merge-actions">
+                <button onclick="moveMergeFile(${i}, -1)" class="p-1.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500" ${i === 0 ? 'disabled style="opacity:0.3"' : ''} title="Move up">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                </button>
+                <button onclick="moveMergeFile(${i}, 1)" class="p-1.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500" ${i === mergeFiles.length - 1 ? 'disabled style="opacity:0.3"' : ''} title="Move down">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <button onclick="removeMergeFile(${i})" class="p-1.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-500 hover:text-red-400" title="Remove">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function moveMergeFile(index, direction) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= mergeFiles.length) return;
+    const temp = mergeFiles[index];
+    mergeFiles[index] = mergeFiles[newIndex];
+    mergeFiles[newIndex] = temp;
+    renderMergeList();
+}
+
+function removeMergeFile(index) {
+    mergeFiles.splice(index, 1);
+    if (mergeFiles.length === 0) {
+        clearAll();
+        setMode('merge');
+    } else {
+        renderMergeList();
+    }
+}
+
+async function mergePDFs() {
+    if (mergeFiles.length < 2) { showToast('Add at least 2 PDFs to merge', 'warning'); return; }
+    if (!window.PDFLib) { showError('PDF merge library not loaded. Please refresh the page.'); return; }
+
+    isProcessing = true;
+    updateStatus('loading', 'Merging PDFs...', 'Combining ' + mergeFiles.length + ' files');
+    btnMergeAction.disabled = true;
+
+    try {
+        const { PDFDocument } = PDFLib;
+        const mergedPdf = await PDFDocument.create();
+        let totalPages = 0;
+
+        for (let i = 0; i < mergeFiles.length; i++) {
+            const progress = ((i) / mergeFiles.length) * 100;
+            progressBar.style.width = progress + '%';
+            statusDetail.textContent = 'Adding ' + mergeFiles[i].name + '...';
+
+            const arrayBuffer = await mergeFiles[i].arrayBuffer();
+            const pdf = await PDFDocument.load(arrayBuffer);
+            const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+            pages.forEach(page => mergedPdf.addPage(page));
+            totalPages += pdf.getPageCount();
+        }
+
+        const mergedPdfFile = await mergedPdf.save();
+        const blob = new Blob([mergedPdfFile], { type: 'application/pdf' });
+        triggerDownload(blob, 'cybernate-merged.pdf');
+
+        progressBar.style.width = '100%';
+        updateStatus('success', 'Merge Complete', totalPages + ' pages from ' + mergeFiles.length + ' files');
+        showToast('PDFs merged successfully!', 'success');
+    } catch (error) {
+        console.error(error);
+        showError('Merge failed: ' + error.message);
+        btnRetry.classList.remove('hidden');
+    } finally {
+        isProcessing = false;
+        btnMergeAction.disabled = mergeFiles.length < 2;
+    }
 }
 
 function showBatchFiles() {
@@ -414,9 +1102,8 @@ async function loadPDF(file) {
         rangeFrom.value = 1; rangeTo.value = totalPages;
         rangeFrom.max = totalPages; rangeTo.max = totalPages;
         updatePageNav(); await renderPage(1);
-        updateStatus('idle', 'PDF Loaded', 'Ready to process. Click a mode button.');
+        updateStatus('idle', 'PDF Loaded', totalPages + ' pages ready. Choose a mode to process.');
         showToast('Loaded ' + totalPages + ' pages', 'success');
-        setTimeout(() => processPDF(), 100);
     } catch (error) { console.error(error); showError('Failed to load PDF. The file may be corrupted or encrypted.'); }
 }
 
@@ -461,16 +1148,16 @@ async function processOCRMode(lang) {
         statusDetail.textContent = 'OCR processing page ' + i + ' of ' + toPage + '...';
         await renderPage(i);
         const text = await runOCR(canvas, lang);
-        fullText += (i > fromPage ? '
-
-' : '') + '--- Page ' + i + ' ---
-' + text;
+        fullText += (i > fromPage ? '\n\n' : '') + '--- Page ' + i + ' ---\n' + text;
         outputText.value = fullText; outputText.classList.remove('hidden'); emptyState.style.display = 'none';
         ocrText = fullText; updateStats();
     }
     progressBar.style.width = '100%';
     updateStatus('success', 'OCR Complete', 'Extracted text from ' + pageCount + ' pages');
     showToast('OCR extraction complete!', 'success');
+    aiSummaryBar.classList.remove('hidden');
+    qaBar.classList.remove('hidden');
+    updateUsageBadges();
 }
 
 function runOCR(canvas, lang) {
@@ -557,12 +1244,10 @@ async function processBatchMode(lang) {
         const fileProgress = ((idx) / batchFiles.length) * 100;
         progressBar.style.width = fileProgress + '%';
         statusDetail.textContent = 'Processing ' + (idx + 1) + ' of ' + batchFiles.length + ': ' + file.name;
-
         const resultDiv = document.createElement('div');
         resultDiv.className = 'batch-item p-3 rounded-lg bg-slate-800/30 border border-slate-700/30';
         resultDiv.innerHTML = '<div class="flex items-center gap-3"><div class="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></div><div class="flex-1 min-w-0"><p class="text-xs font-medium text-slate-300 truncate">' + file.name + '</p><p class="text-[10px] text-slate-500">Processing...</p></div></div>';
         batchResults.appendChild(resultDiv);
-
         try {
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -572,16 +1257,12 @@ async function processBatchMode(lang) {
                 const textContent = await page.getTextContent();
                 let pageText = textContent.items.map(item => item.str).join(' ');
                 if (!pageText.trim()) {
-                    const scale = 2.0;
-                    const viewport = page.getViewport({ scale });
-                    const c = document.createElement('canvas');
-                    c.width = viewport.width; c.height = viewport.height;
-                    const cx = c.getContext('2d');
-                    await page.render({ canvasContext: cx, viewport }).promise;
+                    const scale = 2.0; const viewport = page.getViewport({ scale });
+                    const c = document.createElement('canvas'); c.width = viewport.width; c.height = viewport.height;
+                    const cx = c.getContext('2d'); await page.render({ canvasContext: cx, viewport }).promise;
                     pageText = await runOCR(c, lang);
                 }
-                fileText += pageText + '
-';
+                fileText += pageText + '\n';
             }
             resultDiv.innerHTML = '<div class="flex items-center gap-3"><div class="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div><div class="flex-1 min-w-0"><p class="text-xs font-medium text-slate-300 truncate">' + file.name + '</p><p class="text-[10px] text-emerald-400">' + fileText.trim().split(/\s+/).length + ' words extracted</p></div><button onclick="downloadBatchText(' + idx + ')" class="p-1.5 hover:bg-slate-700/50 rounded transition-colors text-slate-500 hover:text-white" title="Download"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></button></div>';
             resultDiv.dataset.text = fileText;
@@ -728,6 +1409,10 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' && !e.target.matches('input, textarea, select')) changePage(-1);
     if (e.key === 'ArrowRight' && !e.target.matches('input, textarea, select')) changePage(1);
 });
+
+// Init
+updateUsageBadges();
+if (getApiKey()) { console.log('Anthropic API key found in localStorage'); }
 </script>
 </body>
 </html>
